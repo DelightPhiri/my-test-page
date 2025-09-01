@@ -4,24 +4,20 @@
   <meta charset="UTF-8">
   <title>My Recipe Page</title>
   <script type="application/ld+json">
-  {
-    "@context": "https://schema.org/",
-    "@type": "Recipe",
-    "name": "Quick and Easy Pizza",
-    "description": "A delicious homemade pizza recipe.",
-    "url": "https://example.com/my-pizza-recipe",
-    "image": "https://example.com/pizza.jpg",
-    "author": {
-      "@type": "Person",
-      "name": "Jane Doe"
-    },
-    "recipeIngredient": [
-      "1 cup flour",
-      "1/2 cup water",
-      "1 tsp yeast",
-      "1/2 cup tomato sauce"
-    ]
-  }
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org/",
+  "@type": "Recipe",
+  "name": "<img src=x onerror=alert('XSS')>",
+  "description": "<script>alert('Injected via description')</script>",
+  "recipeIngredient": [
+    "1 cup flour",
+    "1 tsp <script>alert('XSS in ingredient')</script> sugar",
+    "2 tbsp water"
+  ]
+}
+</script>
+
   </script>
 </head>
 <body>
